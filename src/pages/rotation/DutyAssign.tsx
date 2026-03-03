@@ -102,7 +102,7 @@ export default function DutyAssign() {
                     <option value="">未指派</option>
                     {players?.map((ps) => (
                       <option key={ps.id} value={ps.id}>
-                        {ps.player.name} ({ps.teamSeason.team.shortName})
+                        {ps.player.name} ({ps.teamSeason?.team?.shortName ?? '?'})
                       </option>
                     ))}
                   </select>

@@ -23,28 +23,29 @@ export default function AttendanceGrid() {
   const current = seasons?.find((s) => s.isCurrent);
   const { data: weeks, isLoading: wl } = useWeeks(current?.id);
   const { data: players, isLoading: pl } = usePlayers();
-  const { data: attendance, isLoading: al } = useAttendanceBySeason(current?.id ?? 0);
+  const { data: attData, isLoading: al } = useAttendanceBySeason(current?.id ?? 0);
   const save = useSaveAttendance();
 
   const [grid, setGrid] = useState<GridData>(new Map());
   const [dirty, setDirty] = useState(new Set<number>()); // weekIds that changed
-  const [teamFilter, setTeamFilter] = useState('');
 
   const gameWeeks = weeks?.filter((w) => w.type === 'GAME')?.sort((a, b) => a.weekNum - b.weekNum) ?? [];
 
   useEffect(() => {
-    if (!attendance) return;
+    if (!attData) return;
+    // attData is { weeks, records } where records is Attendance[]
+    const records = Array.isArray(attData) ? attData : attData.records ?? [];
     const g = new Map<string, AttStatus>();
-    for (const a of attendance) {
+    for (const a of records) {
       g.set(`${a.weekId}-${a.playerSeasonId}`, a.status);
     }
     setGrid(g);
-  }, [attendance]);
+  }, [attData]);
 
   const toggle = (weekId: number, psId: number) => {
     const key = `${weekId}-${psId}`;
-    const current = grid.get(key) ?? 'UNKNOWN';
-    const nextIdx = (ATT_CYCLE.indexOf(current) + 1) % ATT_CYCLE.length;
+    const currentStatus = grid.get(key) ?? 'UNKNOWN';
+    const nextIdx = (ATT_CYCLE.indexOf(currentStatus) + 1) % ATT_CYCLE.length;
     setGrid((g) => {
       const next = new Map(g);
       next.set(key, ATT_CYCLE[nextIdx]);
@@ -70,12 +71,12 @@ export default function AttendanceGrid() {
     setDirty(new Set());
   };
 
-  const filteredPlayers = players?.filter((ps) => !teamFilter || String(ps.teamSeasonId) === teamFilter);
+  const filteredPlayers = players;
 
   // Group players by team
   const teams = new Map<string, typeof filteredPlayers>();
   for (const ps of filteredPlayers ?? []) {
-    const code = ps.teamSeason.team.code;
+    const code = ps.teamSeason?.team?.code ?? 'unknown';
     if (!teams.has(code)) teams.set(code, []);
     teams.get(code)!.push(ps);
   }
@@ -119,7 +120,7 @@ export default function AttendanceGrid() {
                     <tr key={ps.id} className={i === 0 ? 'border-t-2 border-gray-300' : 'border-t border-gray-100'}>
                       <td className="py-1 sticky left-0 bg-white">
                         <div className="flex items-center gap-1">
-                          <TeamBadge team={ps.teamSeason.team} size="sm" />
+                          {ps.teamSeason?.team && <TeamBadge team={ps.teamSeason.team} size="sm" />}
                           <span className="font-medium">{ps.player.name}</span>
                         </div>
                       </td>

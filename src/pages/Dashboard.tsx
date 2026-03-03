@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useSeasons, useWeeks, useTeams } from '../hooks/useApi';
 import { Card } from '../components/ui/Card';
 import { Spinner } from '../components/ui/Spinner';
@@ -80,18 +81,18 @@ export default function Dashboard() {
         <Card title="快速操作">
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: '輸入數據', href: '/boxscore', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-              { label: '管理出席', href: '/attendance', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-              { label: '編輯賽程', href: '/schedule', color: 'bg-green-50 text-green-700 border-green-200' },
-              { label: '管理球員', href: '/players', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+              { label: '輸入數據', to: '/boxscore', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+              { label: '管理出席', to: '/attendance', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+              { label: '編輯賽程', to: '/schedule', color: 'bg-green-50 text-green-700 border-green-200' },
+              { label: '管理球員', to: '/players', color: 'bg-purple-50 text-purple-700 border-purple-200' },
             ].map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
+              <Link
+                key={item.to}
+                to={item.to}
                 className={`block rounded-lg border p-3 text-center text-sm font-medium transition-colors hover:shadow-sm ${item.color}`}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
         </Card>

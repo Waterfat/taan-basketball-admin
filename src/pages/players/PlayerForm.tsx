@@ -14,6 +14,7 @@ export default function PlayerForm() {
   const { data: ps, isLoading } = usePlayer(Number(id));
   const { data: teams } = useTeams();
   const { data: seasons } = useSeasons();
+  const current = seasons?.find((s) => s.isCurrent);
   const create = useCreatePlayer();
   const update = useUpdatePlayer();
   const remove = useDeletePlayer();
@@ -26,7 +27,7 @@ export default function PlayerForm() {
     if (ps) {
       setForm({
         name: ps.player.name,
-        teamId: String(ps.teamSeasonId),
+        teamId: ps.teamSeason?.team ? String(ps.teamSeason.team.id) : '',
         jerseyNumber: ps.jerseyNumber != null ? String(ps.jerseyNumber) : '',
         isCaptain: ps.isCaptain,
         isReferee: ps.player.isReferee,
@@ -39,20 +40,29 @@ export default function PlayerForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = {
-      name: form.name,
-      teamSeasonId: Number(form.teamId),
-      jerseyNumber: form.jerseyNumber ? Number(form.jerseyNumber) : undefined,
-      isCaptain: form.isCaptain,
-      isReferee: form.isReferee,
-      phone: form.phone || undefined,
-    };
     try {
       if (isEdit) {
-        await update.mutateAsync({ id: Number(id), ...data });
+        await update.mutateAsync({
+          playerId: ps!.player.id,
+          name: form.name,
+          phone: form.phone || undefined,
+          isReferee: form.isReferee,
+          teamSeasonId: ps?.teamSeasonId || undefined,
+          jerseyNumber: form.jerseyNumber ? Number(form.jerseyNumber) : undefined,
+          isCaptain: form.isCaptain,
+        });
         toast.success('球員已更新');
       } else {
-        await create.mutateAsync(data);
+        if (!current) { toast.error('找不到目前賽季'); return; }
+        await create.mutateAsync({
+          name: form.name,
+          teamId: Number(form.teamId),
+          seasonId: current.id,
+          jerseyNumber: form.jerseyNumber ? Number(form.jerseyNumber) : undefined,
+          isCaptain: form.isCaptain,
+          isReferee: form.isReferee,
+          phone: form.phone || undefined,
+        });
         toast.success('球員已建立');
       }
       navigate('/players');
@@ -64,7 +74,7 @@ export default function PlayerForm() {
   const handleDelete = async () => {
     if (!confirm('確定要刪除此球員？')) return;
     try {
-      await remove.mutateAsync(Number(id));
+      await remove.mutateAsync(ps!.player.id);
       toast.success('球員已刪除');
       navigate('/players');
     } catch (err: any) {

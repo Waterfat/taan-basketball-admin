@@ -52,8 +52,17 @@ function AuthInit({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ refreshToken: rt }),
         });
         if (res.ok) {
-          const data = await res.json();
-          setAuth(data.user, data.accessToken, data.refreshToken);
+          const tokens = await res.json();
+          // Refresh endpoint returns { accessToken, refreshToken } without user
+          // Fetch user profile with the new token
+          const meRes = await fetch(`${API_BASE}/auth/me`, {
+            headers: { Authorization: `Bearer ${tokens.accessToken}` },
+          });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            const user = meData.data ?? meData;
+            setAuth(user, tokens.accessToken, tokens.refreshToken);
+          }
         }
       } catch { /* noop */ }
       setLoading(false);

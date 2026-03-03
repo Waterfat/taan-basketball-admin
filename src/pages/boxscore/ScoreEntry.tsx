@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useGame, useBoxscore, useSaveBoxscore, usePlayers, useUpdateGame } from '../../hooks/useApi';
 import { Card } from '../../components/ui/Card';
@@ -60,8 +60,17 @@ export default function ScoreEntry() {
   const gid = Number(gameId);
   const { data: game, isLoading: gLoading } = useGame(gid);
   const { data: existingStats, isLoading: bLoading } = useBoxscore(gid);
-  const { data: homePlayers } = usePlayers({ teamSeasonId: game?.homeTeamId });
-  const { data: awayPlayers } = usePlayers({ teamSeasonId: game?.awayTeamId });
+  const { data: homePlayersRaw } = usePlayers({ teamId: game?.homeTeam?.teamId });
+  const { data: awayPlayersRaw } = usePlayers({ teamId: game?.awayTeam?.teamId });
+  // Filter to only the correct TeamSeason (memoized to prevent infinite re-render)
+  const homePlayers = useMemo(
+    () => homePlayersRaw?.filter((ps) => ps.teamSeasonId === game?.homeTeamId),
+    [homePlayersRaw, game?.homeTeamId],
+  );
+  const awayPlayers = useMemo(
+    () => awayPlayersRaw?.filter((ps) => ps.teamSeasonId === game?.awayTeamId),
+    [awayPlayersRaw, game?.awayTeamId],
+  );
   const saveBoxscore = useSaveBoxscore();
   const updateGame = useUpdateGame();
 

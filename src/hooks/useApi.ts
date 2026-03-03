@@ -3,8 +3,18 @@ import { apiClient } from '../lib/api-client';
 import type {
   Season, Team, TeamSeason, Player, PlayerSeason, Week, Game,
   PlayerGameStat, Attendance, DutyRecord, DragonScore, Standing,
-  Announcement, User, PaginatedResponse,
+  Announcement, User,
 } from '../types';
+
+// ─── Helper: transform Player (API shape) → PlayerSeason[] ───
+function playerToPlayerSeasons(p: any): PlayerSeason[] {
+  const { playerSeasons, ...playerFields } = p;
+  if (!playerSeasons || !Array.isArray(playerSeasons)) return [];
+  return playerSeasons.map((ps: any) => ({
+    ...ps,
+    player: { id: playerFields.id, name: playerFields.name, avatarUrl: playerFields.avatarUrl, phone: playerFields.phone, isReferee: playerFields.isReferee },
+  }));
+}
 
 // ─── Seasons ───
 export function useSeasons() {
@@ -35,7 +45,7 @@ export function useUpdateSeason() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<Season> & { id: number }) =>
-      apiClient<Season>(`/admin/seasons/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient<Season>(`/admin/seasons/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['seasons'] }),
   });
 }
@@ -60,44 +70,68 @@ export function useUpdateTeam() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<Team> & { id: number }) =>
-      apiClient<Team>(`/admin/teams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient<Team>(`/admin/teams/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['teams'] }),
   });
 }
 
-export function useTeamSeasons(seasonId?: number) {
-  return useQuery({
-    queryKey: ['teamSeasons', seasonId],
-    queryFn: () => apiClient<TeamSeason[]>(`/admin/teams?seasonId=${seasonId}&withSeason=true`),
-    enabled: !!seasonId,
+export function useEnsureTeamSeason() {
+  return useMutation({
+    mutationFn: ({ teamId, seasonId }: { teamId: number; seasonId: number }) =>
+      apiClient<TeamSeason>(`/admin/teams/${teamId}/seasons/${seasonId}`, { method: 'POST' }),
   });
 }
 
 // ─── Players ───
-export function usePlayers(params?: { teamSeasonId?: number; search?: string }) {
+export function usePlayers(params?: { teamId?: number; search?: string }) {
   const sp = new URLSearchParams();
-  if (params?.teamSeasonId) sp.set('teamSeasonId', String(params.teamSeasonId));
+  if (params?.teamId) sp.set('teamId', String(params.teamId));
   if (params?.search) sp.set('search', params.search);
   const q = sp.toString();
   return useQuery({
     queryKey: ['players', params],
-    queryFn: () => apiClient<PlayerSeason[]>(`/admin/players${q ? `?${q}` : ''}`),
+    queryFn: async () => {
+      const players = await apiClient<any[]>(`/admin/players${q ? `?${q}` : ''}`);
+      return players.flatMap(playerToPlayerSeasons) as PlayerSeason[];
+    },
   });
 }
 
-export function usePlayer(id: number) {
+export function usePlayer(playerId: number) {
   return useQuery({
-    queryKey: ['players', id],
-    queryFn: () => apiClient<PlayerSeason>(`/admin/players/${id}`),
-    enabled: !!id,
+    queryKey: ['players', 'detail', playerId],
+    queryFn: async () => {
+      const p = await apiClient<any>(`/admin/players/${playerId}`);
+      const seasons = playerToPlayerSeasons(p);
+      // Return the most recent PlayerSeason (last in array), or construct one
+      if (seasons.length > 0) return seasons[seasons.length - 1];
+      // No season assignment yet - return a minimal object
+      return { id: 0, playerId: p.id, teamSeasonId: 0, jerseyNumber: undefined, isCaptain: false, player: { id: p.id, name: p.name, avatarUrl: p.avatarUrl, phone: p.phone, isReferee: p.isReferee }, teamSeason: undefined as any } as PlayerSeason;
+    },
+    enabled: !!playerId,
   });
 }
 
 export function useCreatePlayer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; teamSeasonId: number; jerseyNumber?: number; isCaptain?: boolean; isReferee?: boolean; phone?: string }) =>
-      apiClient('/admin/players', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: async (data: { name: string; teamId: number; seasonId: number; jerseyNumber?: number; isCaptain?: boolean; isReferee?: boolean; phone?: string }) => {
+      // Step 1: Create the Player record
+      const player = await apiClient<any>('/admin/players', {
+        method: 'POST',
+        body: JSON.stringify({ name: data.name, phone: data.phone, isReferee: data.isReferee ?? false }),
+      });
+      // Step 2: Ensure TeamSeason exists
+      const teamSeason = await apiClient<any>(`/admin/teams/${data.teamId}/seasons/${data.seasonId}`, {
+        method: 'POST',
+      });
+      // Step 3: Assign player to team
+      await apiClient(`/admin/players/${player.id}/assign-team`, {
+        method: 'POST',
+        body: JSON.stringify({ teamSeasonId: teamSeason.id, jerseyNumber: data.jerseyNumber, isCaptain: data.isCaptain }),
+      });
+      return player;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['players'] }),
   });
 }
@@ -105,8 +139,20 @@ export function useCreatePlayer() {
 export function useUpdatePlayer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number } & Record<string, unknown>) =>
-      apiClient(`/admin/players/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    mutationFn: async ({ playerId, teamSeasonId, jerseyNumber, isCaptain, ...playerData }: { playerId: number; teamSeasonId?: number; jerseyNumber?: number; isCaptain?: boolean; name?: string; phone?: string; isReferee?: boolean }) => {
+      // Update Player fields
+      await apiClient(`/admin/players/${playerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(playerData),
+      });
+      // Update team assignment if teamSeasonId provided
+      if (teamSeasonId) {
+        await apiClient(`/admin/players/${playerId}/assign-team`, {
+          method: 'POST',
+          body: JSON.stringify({ teamSeasonId, jerseyNumber, isCaptain }),
+        });
+      }
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['players'] }),
   });
 }
@@ -114,7 +160,7 @@ export function useUpdatePlayer() {
 export function useDeletePlayer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => apiClient(`/admin/players/${id}`, { method: 'DELETE' }),
+    mutationFn: (playerId: number) => apiClient(`/admin/players/${playerId}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['players'] }),
   });
 }
@@ -149,7 +195,7 @@ export function useUpdateWeek() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<Week> & { id: number }) =>
-      apiClient<Week>(`/admin/weeks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient<Week>(`/admin/weeks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['weeks'] }),
   });
 }
@@ -175,7 +221,7 @@ export function useUpdateGame() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<Game> & { id: number }) =>
-      apiClient<Game>(`/admin/games/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient<Game>(`/admin/games/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['games'] });
       qc.invalidateQueries({ queryKey: ['weeks'] });
@@ -187,7 +233,7 @@ export function useUpdateGame() {
 export function useBoxscore(gameId: number) {
   return useQuery({
     queryKey: ['boxscore', gameId],
-    queryFn: () => apiClient<PlayerGameStat[]>(`/admin/boxscore/${gameId}`),
+    queryFn: () => apiClient<PlayerGameStat[]>(`/admin/games/${gameId}/boxscore`),
     enabled: !!gameId,
   });
 }
@@ -196,7 +242,7 @@ export function useSaveBoxscore() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ gameId, stats }: { gameId: number; stats: Partial<PlayerGameStat>[] }) =>
-      apiClient(`/admin/boxscore/${gameId}`, { method: 'PUT', body: JSON.stringify({ stats }) }),
+      apiClient(`/admin/games/${gameId}/boxscore`, { method: 'POST', body: JSON.stringify({ stats }) }),
     onSuccess: (_, v) => {
       qc.invalidateQueries({ queryKey: ['boxscore', v.gameId] });
       qc.invalidateQueries({ queryKey: ['games'] });
@@ -213,10 +259,15 @@ export function useAttendanceByWeek(weekId: number) {
   });
 }
 
+export interface AttendanceSeasonData {
+  weeks: { id: number; weekNum: number; date: string }[];
+  records: Attendance[];
+}
+
 export function useAttendanceBySeason(seasonId: number) {
   return useQuery({
     queryKey: ['attendance', 'season', seasonId],
-    queryFn: () => apiClient<Attendance[]>(`/admin/attendance?seasonId=${seasonId}`),
+    queryFn: () => apiClient<AttendanceSeasonData>(`/admin/attendance?seasonId=${seasonId}`),
     enabled: !!seasonId,
   });
 }
@@ -225,7 +276,12 @@ export function useSaveAttendance() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { weekId: number; records: { playerSeasonId: number; status: string }[] }) =>
-      apiClient('/admin/attendance', { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient('/admin/attendance/batch', {
+        method: 'POST',
+        body: JSON.stringify({
+          entries: data.records.map((r) => ({ weekId: data.weekId, playerSeasonId: r.playerSeasonId, status: r.status })),
+        }),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
   });
 }
@@ -243,7 +299,12 @@ export function useSaveDuties() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { gameId: number; duties: { playerSeasonId: number; dutyType: string }[] }) =>
-      apiClient('/admin/duties', { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient('/admin/duties/batch', {
+        method: 'POST',
+        body: JSON.stringify({
+          entries: data.duties.map((d) => ({ gameId: data.gameId, playerSeasonId: d.playerSeasonId, dutyType: d.dutyType })),
+        }),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['duties'] }),
   });
 }
@@ -270,7 +331,7 @@ export function useUpdateDragonScore() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: { id: number } & Record<string, unknown>) =>
-      apiClient(`/admin/dragon/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient(`/admin/dragon/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['dragon'] }),
   });
 }
@@ -322,7 +383,7 @@ export function useUpdateAnnouncement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: Partial<Announcement> & { id: number }) =>
-      apiClient(`/admin/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient(`/admin/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }),
   });
 }
@@ -364,7 +425,7 @@ export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: { id: number } & Record<string, unknown>) =>
-      apiClient(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      apiClient(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
 }

@@ -15,9 +15,21 @@ async function refreshAccessToken(): Promise<string | null> {
       body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    useAuthStore.getState().setAuth(data.user, data.accessToken, data.refreshToken);
-    return data.accessToken;
+    const tokens = await res.json();
+    // Refresh endpoint returns only { accessToken, refreshToken } without user
+    // Fetch user profile with the new token
+    const meRes = await fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+    });
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      const user = meData.data ?? meData;
+      useAuthStore.getState().setAuth(user, tokens.accessToken, tokens.refreshToken);
+    } else {
+      // Still store tokens even if /me fails
+      useAuthStore.getState().setAuth(null as any, tokens.accessToken, tokens.refreshToken);
+    }
+    return tokens.accessToken;
   } catch {
     return null;
   }

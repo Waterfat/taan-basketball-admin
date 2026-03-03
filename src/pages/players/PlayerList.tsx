@@ -16,7 +16,7 @@ export default function PlayerList() {
   const current = seasons?.find((s) => s.isCurrent);
   const { data: players, isLoading } = usePlayers({
     search: search || undefined,
-    teamSeasonId: teamFilter ? Number(teamFilter) : undefined,
+    teamId: teamFilter ? Number(teamFilter) : undefined,
   });
 
   return (
@@ -69,7 +69,7 @@ export default function PlayerList() {
                 <tr key={ps.id} className="hover:bg-gray-50">
                   <td className="py-2.5 font-medium">{ps.player.name}</td>
                   <td className="py-2.5">
-                    <TeamBadge team={ps.teamSeason.team} size="sm" />
+                    {ps.teamSeason?.team ? <TeamBadge team={ps.teamSeason.team} size="sm" /> : <span className="text-gray-400">-</span>}
                   </td>
                   <td className="py-2.5 text-gray-500">{ps.jerseyNumber ?? '-'}</td>
                   <td className="py-2.5 space-x-1">
@@ -77,7 +77,7 @@ export default function PlayerList() {
                     {ps.player.isReferee && <Badge variant="warning">裁判</Badge>}
                   </td>
                   <td className="py-2.5">
-                    <Link to={`/players/${ps.id}/edit`} className="text-orange-500 hover:underline text-xs">
+                    <Link to={`/players/${ps.player.id}/edit`} className="text-orange-500 hover:underline text-xs">
                       編輯
                     </Link>
                   </td>
