@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTeam, useUpdateTeam } from '../../hooks/useApi';
+import { useFormState } from '../../hooks/useFormState';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
@@ -13,7 +14,7 @@ export default function TeamForm() {
   const { data: team, isLoading } = useTeam(Number(id));
   const update = useUpdateTeam();
 
-  const [form, setForm] = useState({ name: '', shortName: '', color: '#000000', barColor: '', textColor: '#ffffff' });
+  const { form, set, setForm } = useFormState({ name: '', shortName: '', color: '#000000', barColor: '', textColor: '#ffffff' });
 
   useEffect(() => {
     if (team) setForm({ name: team.name, shortName: team.shortName, color: team.color, barColor: team.barColor ?? '', textColor: team.textColor ?? '#ffffff' });
@@ -31,8 +32,6 @@ export default function TeamForm() {
       toast.error(err.message);
     }
   };
-
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="max-w-lg space-y-4">

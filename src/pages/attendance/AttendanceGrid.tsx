@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSeasons, useWeeks, usePlayers, useAttendanceBySeason, useSaveAttendance } from '../../hooks/useApi';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
 import { TeamBadge } from '../../components/TeamBadge';
-import { formatDate } from '../../lib/utils';
+import { formatDate, filterGameWeeks } from '../../lib/utils';
 import { ATT_SYMBOL, type AttStatus } from '../../types';
 import { toast } from 'sonner';
 
@@ -29,7 +29,7 @@ export default function AttendanceGrid() {
   const [grid, setGrid] = useState<GridData>(new Map());
   const [dirty, setDirty] = useState(new Set<number>()); // weekIds that changed
 
-  const gameWeeks = weeks?.filter((w) => w.type === 'GAME')?.sort((a, b) => a.weekNum - b.weekNum) ?? [];
+  const gameWeeks = useMemo(() => filterGameWeeks(weeks, false), [weeks]);
 
   useEffect(() => {
     if (!attData) return;
@@ -42,17 +42,17 @@ export default function AttendanceGrid() {
     setGrid(g);
   }, [attData]);
 
-  const toggle = (weekId: number, psId: number) => {
+  const toggle = useCallback((weekId: number, psId: number) => {
     const key = `${weekId}-${psId}`;
-    const currentStatus = grid.get(key) ?? 'UNKNOWN';
-    const nextIdx = (ATT_CYCLE.indexOf(currentStatus) + 1) % ATT_CYCLE.length;
     setGrid((g) => {
+      const currentStatus = g.get(key) ?? 'UNKNOWN';
+      const nextIdx = (ATT_CYCLE.indexOf(currentStatus) + 1) % ATT_CYCLE.length;
       const next = new Map(g);
       next.set(key, ATT_CYCLE[nextIdx]);
       return next;
     });
     setDirty((d) => new Set(d).add(weekId));
-  };
+  }, []);
 
   const handleSave = async () => {
     for (const weekId of dirty) {

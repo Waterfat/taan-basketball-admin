@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateWeek, useSeasons } from '../../hooks/useApi';
+import { useFormState } from '../../hooks/useFormState';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
@@ -13,7 +13,7 @@ export default function WeekForm() {
   const current = seasons?.find((s) => s.isCurrent);
   const create = useCreateWeek();
 
-  const [form, setForm] = useState({
+  const { form, set } = useFormState({
     weekNum: '', date: '', phase: 'REGULAR' as Phase, venue: '', type: 'GAME' as WeekType, reason: '',
   });
 
@@ -36,8 +36,6 @@ export default function WeekForm() {
       toast.error(err.message);
     }
   };
-
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="max-w-lg space-y-4">

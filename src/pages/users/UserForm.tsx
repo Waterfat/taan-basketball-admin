@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUser, useCreateUser, useUpdateUser } from '../../hooks/useApi';
+import { useFormState } from '../../hooks/useFormState';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
@@ -18,7 +19,7 @@ export default function UserForm() {
   const create = useCreateUser();
   const update = useUpdateUser();
 
-  const [form, setForm] = useState({ username: '', password: '', displayName: '', role: 'VIEWER' as Role });
+  const { form, set, setForm } = useFormState({ username: '', password: '', displayName: '', role: 'VIEWER' as Role });
 
   useEffect(() => {
     if (user) setForm({ username: user.username, password: '', displayName: user.displayName, role: user.role });
@@ -43,8 +44,6 @@ export default function UserForm() {
       toast.error(err.message);
     }
   };
-
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="max-w-lg space-y-4">

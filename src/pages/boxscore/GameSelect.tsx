@@ -1,18 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWeeks, useSeasons, useGames } from '../../hooks/useApi';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
 import { TeamBadge } from '../../components/TeamBadge';
-import { formatDate } from '../../lib/utils';
+import { formatDate, filterGameWeeks } from '../../lib/utils';
 import { STATUS_LABEL } from '../../types';
 
 export default function GameSelect() {
   const { data: seasons } = useSeasons();
   const current = seasons?.find((s) => s.isCurrent);
   const { data: weeks, isLoading } = useWeeks(current?.id);
-  const gameWeeks = weeks?.filter((w) => w.type === 'GAME')?.sort((a, b) => b.weekNum - a.weekNum) ?? [];
+  const gameWeeks = useMemo(() => filterGameWeeks(weeks), [weeks]);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
 
   // Auto-select first week with unfinished games, or latest

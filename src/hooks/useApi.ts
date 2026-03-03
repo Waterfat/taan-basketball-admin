@@ -6,11 +6,16 @@ import type {
   Announcement, User,
 } from '../types';
 
+// ─── Raw API shape for Player (includes nested playerSeasons) ───
+interface PlayerApiResponse extends Player {
+  playerSeasons?: Array<Omit<PlayerSeason, 'player'>>;
+}
+
 // ─── Helper: transform Player (API shape) → PlayerSeason[] ───
-function playerToPlayerSeasons(p: any): PlayerSeason[] {
+function playerToPlayerSeasons(p: PlayerApiResponse): PlayerSeason[] {
   const { playerSeasons, ...playerFields } = p;
   if (!playerSeasons || !Array.isArray(playerSeasons)) return [];
-  return playerSeasons.map((ps: any) => ({
+  return playerSeasons.map((ps) => ({
     ...ps,
     player: { id: playerFields.id, name: playerFields.name, avatarUrl: playerFields.avatarUrl, phone: playerFields.phone, isReferee: playerFields.isReferee },
   }));
@@ -91,8 +96,8 @@ export function usePlayers(params?: { teamId?: number; search?: string }) {
   return useQuery({
     queryKey: ['players', params],
     queryFn: async () => {
-      const players = await apiClient<any[]>(`/admin/players${q ? `?${q}` : ''}`);
-      return players.flatMap(playerToPlayerSeasons) as PlayerSeason[];
+      const players = await apiClient<PlayerApiResponse[]>(`/admin/players${q ? `?${q}` : ''}`);
+      return players.flatMap(playerToPlayerSeasons);
     },
   });
 }
@@ -101,12 +106,12 @@ export function usePlayer(playerId: number) {
   return useQuery({
     queryKey: ['players', 'detail', playerId],
     queryFn: async () => {
-      const p = await apiClient<any>(`/admin/players/${playerId}`);
+      const p = await apiClient<PlayerApiResponse>(`/admin/players/${playerId}`);
       const seasons = playerToPlayerSeasons(p);
       // Return the most recent PlayerSeason (last in array), or construct one
       if (seasons.length > 0) return seasons[seasons.length - 1];
       // No season assignment yet - return a minimal object
-      return { id: 0, playerId: p.id, teamSeasonId: 0, jerseyNumber: undefined, isCaptain: false, player: { id: p.id, name: p.name, avatarUrl: p.avatarUrl, phone: p.phone, isReferee: p.isReferee }, teamSeason: undefined as any } as PlayerSeason;
+      return { id: 0, playerId: p.id, teamSeasonId: 0, jerseyNumber: undefined, isCaptain: false, player: { id: p.id, name: p.name, avatarUrl: p.avatarUrl, phone: p.phone, isReferee: p.isReferee }, teamSeason: undefined as unknown as TeamSeason } as PlayerSeason;
     },
     enabled: !!playerId,
   });
@@ -117,12 +122,12 @@ export function useCreatePlayer() {
   return useMutation({
     mutationFn: async (data: { name: string; teamId: number; seasonId: number; jerseyNumber?: number; isCaptain?: boolean; isReferee?: boolean; phone?: string }) => {
       // Step 1: Create the Player record
-      const player = await apiClient<any>('/admin/players', {
+      const player = await apiClient<Player>('/admin/players', {
         method: 'POST',
         body: JSON.stringify({ name: data.name, phone: data.phone, isReferee: data.isReferee ?? false }),
       });
       // Step 2: Ensure TeamSeason exists
-      const teamSeason = await apiClient<any>(`/admin/teams/${data.teamId}/seasons/${data.seasonId}`, {
+      const teamSeason = await apiClient<TeamSeason>(`/admin/teams/${data.teamId}/seasons/${data.seasonId}`, {
         method: 'POST',
       });
       // Step 3: Assign player to team

@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSeasons, useWeeks, useGames, usePlayers, useDuties, useSaveDuties } from '../../hooks/useApi';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
 import { TeamBadge } from '../../components/TeamBadge';
-import { formatDate } from '../../lib/utils';
+import { formatDate, filterGameWeeks } from '../../lib/utils';
 import { DUTY_LABEL, type DutyType } from '../../types';
 import { toast } from 'sonner';
 
@@ -16,7 +16,7 @@ export default function DutyAssign() {
   const current = seasons?.find((s) => s.isCurrent);
   const { data: weeks } = useWeeks(current?.id);
   const { data: players } = usePlayers();
-  const gameWeeks = weeks?.filter((w) => w.type === 'GAME')?.sort((a, b) => b.weekNum - a.weekNum) ?? [];
+  const gameWeeks = useMemo(() => filterGameWeeks(weeks), [weeks]);
 
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const weekId = selectedWeek ?? gameWeeks[0]?.id;

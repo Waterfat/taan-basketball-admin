@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAnnouncement, useCreateAnnouncement, useUpdateAnnouncement } from '../../hooks/useApi';
+import { useFormState } from '../../hooks/useFormState';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
@@ -15,7 +16,7 @@ export default function AnnouncementForm() {
   const create = useCreateAnnouncement();
   const update = useUpdateAnnouncement();
 
-  const [form, setForm] = useState({ title: '', content: '', isPinned: false });
+  const { form, set, setForm } = useFormState({ title: '', content: '', isPinned: false });
 
   useEffect(() => {
     if (item) setForm({ title: item.title, content: item.content, isPinned: item.isPinned });
@@ -38,8 +39,6 @@ export default function AnnouncementForm() {
       toast.error(err.message);
     }
   };
-
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="max-w-lg space-y-4">

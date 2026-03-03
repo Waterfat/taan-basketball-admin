@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePlayer, useCreatePlayer, useUpdatePlayer, useDeletePlayer, useTeams, useSeasons } from '../../hooks/useApi';
+import { useFormState } from '../../hooks/useFormState';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
@@ -19,7 +20,7 @@ export default function PlayerForm() {
   const update = useUpdatePlayer();
   const remove = useDeletePlayer();
 
-  const [form, setForm] = useState({
+  const { form, set, setForm } = useFormState({
     name: '', teamId: '', jerseyNumber: '', isCaptain: false, isReferee: false, phone: '',
   });
 
@@ -81,8 +82,6 @@ export default function PlayerForm() {
       toast.error(err.message);
     }
   };
-
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="max-w-lg space-y-4">
