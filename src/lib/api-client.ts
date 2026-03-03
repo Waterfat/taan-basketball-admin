@@ -62,7 +62,12 @@ export async function apiClient<T = unknown>(
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json();
+  const json = await res.json();
+  // API wraps responses in { success, data } — unwrap if present
+  if (json && typeof json === 'object' && 'data' in json && 'success' in json) {
+    return json.data as T;
+  }
+  return json as T;
 }
 
 export class ApiError extends Error {
