@@ -59,7 +59,7 @@ export default function UserForm() {
             onChange={(e) => set('password', (e.target as HTMLInputElement).value)}
           />
           <FormField label="顯示名稱" required value={form.displayName} onChange={(e) => set('displayName', (e.target as HTMLInputElement).value)} />
-          <FormField label="角色" as="select" value={form.role} onChange={(e) => set('role', (e.target as HTMLSelectElement).value)}>
+          <FormField label="角色" as="select" value={form.role} onChange={(e) => set('role', (e.target as HTMLSelectElement).value as Role)}>
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </FormField>
           <div className="flex gap-2">

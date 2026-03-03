@@ -42,7 +42,7 @@ export default function WeekForm() {
       <h2 className="text-xl font-bold text-gray-800">新增週次</h2>
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField label="類型" as="select" value={form.type} onChange={(e) => set('type', (e.target as HTMLSelectElement).value)}>
+          <FormField label="類型" as="select" value={form.type} onChange={(e) => set('type', (e.target as HTMLSelectElement).value as WeekType)}>
             <option value="GAME">比賽日</option>
             <option value="SUSPENDED">停賽</option>
           </FormField>
@@ -52,7 +52,7 @@ export default function WeekForm() {
           <FormField label="日期" type="date" required value={form.date} onChange={(e) => set('date', (e.target as HTMLInputElement).value)} />
           {form.type === 'GAME' && (
             <>
-              <FormField label="賽制" as="select" value={form.phase} onChange={(e) => set('phase', (e.target as HTMLSelectElement).value)}>
+              <FormField label="賽制" as="select" value={form.phase} onChange={(e) => set('phase', (e.target as HTMLSelectElement).value as Phase)}>
                 <option value="PRESEASON">熱身賽</option>
                 <option value="REGULAR">例行賽</option>
                 <option value="PLAYOFF">季後賽</option>
