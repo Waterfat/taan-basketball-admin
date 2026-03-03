@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { useEffect, useState } from 'react';
@@ -68,7 +68,7 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <AuthInit>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -101,7 +101,7 @@ export default function App() {
           </Routes>
         </AuthInit>
         <Toaster position="top-right" richColors />
-      </BrowserRouter>
+      </HashRouter>
     </QueryClientProvider>
   );
 }

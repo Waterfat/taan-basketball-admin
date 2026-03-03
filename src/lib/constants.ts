@@ -1,4 +1,4 @@
-export const API_BASE = '/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export const TEAM_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
   red:    { bg: '#e53935', text: '#ffffff', bar: '#e53935' },
