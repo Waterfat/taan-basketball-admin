@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { useAnnouncements, useDeleteAnnouncement } from '../../hooks/useApi';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
 import { formatDate } from '../../lib/utils';
 import { Plus, Pin, Trash2 } from 'lucide-react';

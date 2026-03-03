@@ -9,7 +9,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuthStore } from './stores/auth.store';
 import { Spinner } from './components/ui/Spinner';
 import { API_BASE } from './lib/constants';
-import type { User } from './types';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -39,7 +38,7 @@ const queryClient = new QueryClient({
 });
 
 function AuthInit({ children }: { children: React.ReactNode }) {
-  const { setAuth, getRefreshToken, accessToken } = useAuthStore();
+  const { setAuth, getRefreshToken } = useAuthStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

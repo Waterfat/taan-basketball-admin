@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usePlayers, useSeasons, useTeams } from '../../hooks/useApi';
+import { usePlayers, useTeams } from '../../hooks/useApi';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -11,9 +11,7 @@ import { Plus, Search } from 'lucide-react';
 export default function PlayerList() {
   const [search, setSearch] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
-  const { data: seasons } = useSeasons();
   const { data: teams } = useTeams();
-  const current = seasons?.find((s) => s.isCurrent);
   const { data: players, isLoading } = usePlayers({
     search: search || undefined,
     teamId: teamFilter ? Number(teamFilter) : undefined,

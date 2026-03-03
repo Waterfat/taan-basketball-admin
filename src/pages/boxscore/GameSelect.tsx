@@ -6,7 +6,6 @@ import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
 import { TeamBadge } from '../../components/TeamBadge';
 import { formatDate, filterGameWeeks } from '../../lib/utils';
-import { STATUS_LABEL } from '../../types';
 
 export default function GameSelect() {
   const { data: seasons } = useSeasons();

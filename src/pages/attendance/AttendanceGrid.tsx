@@ -110,7 +110,7 @@ export default function AttendanceGrid() {
               </tr>
             </thead>
             <tbody>
-              {[...teams.entries()].map(([code, teamPlayers]) => (
+              {[...teams.entries()].map(([, teamPlayers]) => (
                 teamPlayers!.map((ps, i) => {
                   const present = gameWeeks.filter((w) => grid.get(`${w.id}-${ps.id}`) === 'PRESENT').length;
                   const total = gameWeeks.filter((w) => grid.get(`${w.id}-${ps.id}`) !== 'UNKNOWN').length;

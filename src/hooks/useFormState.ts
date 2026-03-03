@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 
-export function useFormState<T extends Record<string, any>>(initial: T) {
+export function useFormState<T extends Record<string, unknown>>(initial: T) {
   const initialRef = useRef(initial);
   const [form, setForm] = useState(initial);
   const set = useCallback(<K extends keyof T>(key: K, value: T[K]) => {

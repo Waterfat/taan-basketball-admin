@@ -4,7 +4,6 @@ import { useGame, useBoxscore, useSaveBoxscore, usePlayers, useUpdateGame } from
 import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { TeamBadge } from '../../components/TeamBadge';
 import { Spinner } from '../../components/ui/Spinner';
 import type { PlayerGameStat } from '../../types';
 
