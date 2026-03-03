@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './stores/auth.store';
-import { apiClient } from './lib/api-client';
 import { Spinner } from './components/ui/Spinner';
+import { API_BASE } from './lib/constants';
 import type { User } from './types';
 
 import Login from './pages/Login';
@@ -46,7 +46,7 @@ function AuthInit({ children }: { children: React.ReactNode }) {
       const rt = getRefreshToken();
       if (!rt) { setLoading(false); return; }
       try {
-        const res = await fetch('/api/auth/refresh', {
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: rt }),
