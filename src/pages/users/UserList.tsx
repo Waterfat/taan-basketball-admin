@@ -24,8 +24,8 @@ export default function UserList() {
     try {
       await remove.mutateAsync(id);
       toast.success('使用者已刪除');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : '操作失敗');
     }
   };
 

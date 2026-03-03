@@ -3,8 +3,22 @@ import { apiClient } from '../lib/api-client';
 import type {
   Season, Team, TeamSeason, Player, PlayerSeason, Week, Game,
   PlayerGameStat, Attendance, DutyRecord, DragonScore, Standing,
-  Announcement, User,
+  Announcement, User, Role,
 } from '../types';
+
+// ─── Mutation data types ───
+export interface DragonScoreUpdate {
+  id: number;
+  mopPoints?: number;
+  playoffPoints?: number;
+}
+
+export interface UserUpdateData {
+  id: number;
+  displayName?: string;
+  role?: Role;
+  password?: string;
+}
 
 // ─── Raw API shape for Player (includes nested playerSeasons) ───
 interface PlayerApiResponse extends Player {
@@ -111,7 +125,7 @@ export function usePlayer(playerId: number) {
       // Return the most recent PlayerSeason (last in array), or construct one
       if (seasons.length > 0) return seasons[seasons.length - 1];
       // No season assignment yet - return a minimal object
-      return { id: 0, playerId: p.id, teamSeasonId: 0, jerseyNumber: undefined, isCaptain: false, player: { id: p.id, name: p.name, avatarUrl: p.avatarUrl, phone: p.phone, isReferee: p.isReferee }, teamSeason: undefined as unknown as TeamSeason } as PlayerSeason;
+      return { id: 0, playerId: p.id, teamSeasonId: 0, jerseyNumber: undefined, isCaptain: false, player: { id: p.id, name: p.name, avatarUrl: p.avatarUrl, phone: p.phone, isReferee: p.isReferee } } satisfies PlayerSeason;
     },
     enabled: !!playerId,
   });
@@ -335,7 +349,7 @@ export function useRecalculateDragon() {
 export function useUpdateDragonScore() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number } & Record<string, unknown>) =>
+    mutationFn: ({ id, ...data }: DragonScoreUpdate) =>
       apiClient(`/admin/dragon/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['dragon'] }),
   });
@@ -429,7 +443,7 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number } & Record<string, unknown>) =>
+    mutationFn: ({ id, ...data }: UserUpdateData) =>
       apiClient(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });

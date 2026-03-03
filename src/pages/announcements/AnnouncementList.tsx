@@ -17,8 +17,8 @@ export default function AnnouncementList() {
     try {
       await remove.mutateAsync(id);
       toast.success('已刪除');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : '操作失敗');
     }
   };
 

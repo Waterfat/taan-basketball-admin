@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUser, useCreateUser, useUpdateUser } from '../../hooks/useApi';
+import type { UserUpdateData } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
 import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
@@ -31,9 +32,9 @@ export default function UserForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isEdit) {
-      const data: Record<string, unknown> = { displayName: form.displayName, role: form.role };
+      const data: UserUpdateData = { id: Number(id), displayName: form.displayName, role: form.role };
       if (form.password) data.password = form.password;
-      await formSubmit(() => update.mutateAsync({ id: Number(id), ...data }), { success: '使用者已更新', redirect: '/users' });
+      await formSubmit(() => update.mutateAsync(data), { success: '使用者已更新', redirect: '/users' });
     } else {
       await formSubmit(() => create.mutateAsync(form), { success: '使用者已建立', redirect: '/users' });
     }

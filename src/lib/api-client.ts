@@ -30,7 +30,8 @@ async function refreshAccessToken(): Promise<string | null> {
       useAuthStore.getState().setAuth(null, tokens.accessToken, tokens.refreshToken);
     }
     return tokens.accessToken;
-  } catch {
+  } catch (err) {
+    console.error('[Auth] Token refresh failed:', err);
     return null;
   }
 }

@@ -95,7 +95,8 @@ export default function ScoreEntry() {
       return players.map((ps) => {
         const existing = existingStats?.find((s) => s.playerSeasonId === ps.id && s.isHome === isHome);
         if (existing) {
-          return { ...existing, name: ps.player.name } as unknown as StatRow;
+          const { id: _id, gameId: _gid, isHome: _ih, played: _p, treb: _tr, playerSeason: _ps, ...statFields } = existing;
+          return { ...statFields, name: ps.player.name } as StatRow;
         }
         return emptyRow(ps.id, ps.player.name);
       });

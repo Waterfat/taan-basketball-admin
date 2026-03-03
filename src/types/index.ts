@@ -56,7 +56,7 @@ export interface PlayerSeason {
   jerseyNumber?: number;
   isCaptain: boolean;
   player: Player;
-  teamSeason: TeamSeason;
+  teamSeason?: TeamSeason;
 }
 
 export interface Week {

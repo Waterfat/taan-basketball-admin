@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuthStore } from './stores/auth.store';
 import { Spinner } from './components/ui/Spinner';
 import { API_BASE } from './lib/constants';
@@ -79,6 +80,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <HashRouter>
         <AuthInit>
+          <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -108,6 +110,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </ErrorBoundary>
         </AuthInit>
         <Toaster position="top-right" richColors />
       </HashRouter>

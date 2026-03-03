@@ -66,7 +66,7 @@ export default function DragonManage() {
                   <td className="py-2 text-gray-400">{i + 1}</td>
                   <td className="py-2 font-medium">{d.playerSeason?.player.name}</td>
                   <td className="py-2">
-                    {d.playerSeason?.teamSeason.team && (
+                    {d.playerSeason?.teamSeason?.team && (
                       <TeamBadge team={d.playerSeason.teamSeason.team} size="sm" />
                     )}
                   </td>
