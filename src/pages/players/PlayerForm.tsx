@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePlayer, useCreatePlayer, useUpdatePlayer, useDeletePlayer, useTeams, useSeasons } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
@@ -12,6 +13,7 @@ export default function PlayerForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const { data: ps, isLoading } = usePlayer(Number(id));
   const { data: teams } = useTeams();
   const { data: seasons } = useSeasons();
@@ -41,9 +43,9 @@ export default function PlayerForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (isEdit) {
-        await update.mutateAsync({
+    if (isEdit) {
+      await formSubmit(
+        () => update.mutateAsync({
           playerId: ps!.player.id,
           name: form.name,
           phone: form.phone || undefined,
@@ -51,11 +53,13 @@ export default function PlayerForm() {
           teamSeasonId: ps?.teamSeasonId || undefined,
           jerseyNumber: form.jerseyNumber ? Number(form.jerseyNumber) : undefined,
           isCaptain: form.isCaptain,
-        });
-        toast.success('球員已更新');
-      } else {
-        if (!current) { toast.error('找不到目前賽季'); return; }
-        await create.mutateAsync({
+        }),
+        { success: '球員已更新', redirect: '/players' },
+      );
+    } else {
+      if (!current) { toast.error('找不到目前賽季'); return; }
+      await formSubmit(
+        () => create.mutateAsync({
           name: form.name,
           teamId: Number(form.teamId),
           seasonId: current.id,
@@ -63,24 +67,15 @@ export default function PlayerForm() {
           isCaptain: form.isCaptain,
           isReferee: form.isReferee,
           phone: form.phone || undefined,
-        });
-        toast.success('球員已建立');
-      }
-      navigate('/players');
-    } catch (err: any) {
-      toast.error(err.message);
+        }),
+        { success: '球員已建立', redirect: '/players' },
+      );
     }
   };
 
   const handleDelete = async () => {
     if (!confirm('確定要刪除此球員？')) return;
-    try {
-      await remove.mutateAsync(ps!.player.id);
-      toast.success('球員已刪除');
-      navigate('/players');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await formSubmit(() => remove.mutateAsync(ps!.player.id), { success: '球員已刪除', redirect: '/players' });
   };
 
   return (

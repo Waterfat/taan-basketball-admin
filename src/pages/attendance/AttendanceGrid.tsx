@@ -54,7 +54,9 @@ export default function AttendanceGrid() {
     setDirty((d) => new Set(d).add(weekId));
   }, []);
 
-  const handleSave = async () => {
+  const filteredPlayers = players;
+
+  const handleSave = useCallback(async () => {
     for (const weekId of dirty) {
       const records = (filteredPlayers ?? []).map((ps) => ({
         playerSeasonId: ps.id,
@@ -62,16 +64,14 @@ export default function AttendanceGrid() {
       }));
       try {
         await save.mutateAsync({ weekId, records });
-      } catch (err: any) {
-        toast.error(`W${weekId}: ${err.message}`);
+      } catch (err: unknown) {
+        toast.error(`W${weekId}: ${err instanceof Error ? err.message : '操作失敗'}`);
         return;
       }
     }
     toast.success('出席已儲存');
     setDirty(new Set());
-  };
-
-  const filteredPlayers = players;
+  }, [dirty, filteredPlayers, grid, save]);
 
   // Group players by team
   const teams = new Map<string, typeof filteredPlayers>();

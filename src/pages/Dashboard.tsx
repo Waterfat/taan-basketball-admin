@@ -3,7 +3,7 @@ import { useSeasons, useWeeks, useTeams } from '../hooks/useApi';
 import { Card } from '../components/ui/Card';
 import { Spinner } from '../components/ui/Spinner';
 import { Calendar, Users, Trophy, AlertCircle } from 'lucide-react';
-import { formatDate } from '../lib/utils';
+import { formatDate, filterGameWeeks } from '../lib/utils';
 
 export default function Dashboard() {
   const { data: seasons, isLoading: sl } = useSeasons();
@@ -13,12 +13,12 @@ export default function Dashboard() {
 
   if (sl) return <Spinner />;
 
+  const gameWeeks = filterGameWeeks(weeks, false);
+
   const now = new Date();
-  const currentWeek = weeks
-    ?.filter((w) => w.type === 'GAME')
+  const currentWeek = gameWeeks
     .sort((a, b) => Math.abs(new Date(a.date).getTime() - now.getTime()) - Math.abs(new Date(b.date).getTime() - now.getTime()))[0];
 
-  const gameWeeks = weeks?.filter((w) => w.type === 'GAME') ?? [];
   const totalGames = gameWeeks.reduce((sum, w) => sum + (w.games?.length ?? 0), 0);
   const finishedGames = gameWeeks.reduce(
     (sum, w) => sum + (w.games?.filter((g) => g.status === 'FINISHED').length ?? 0), 0,

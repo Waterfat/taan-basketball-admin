@@ -2,16 +2,17 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSeason, useCreateSeason, useUpdateSeason } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
-import { toast } from 'sonner';
 
 export default function SeasonForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const { data: season, isLoading } = useSeason(Number(id));
   const create = useCreateSeason();
   const update = useUpdateSeason();
@@ -39,17 +40,10 @@ export default function SeasonForm() {
       startDate: form.startDate || undefined,
       isCurrent: form.isCurrent,
     };
-    try {
-      if (isEdit) {
-        await update.mutateAsync({ id: Number(id), ...data });
-        toast.success('賽季已更新');
-      } else {
-        await create.mutateAsync(data);
-        toast.success('賽季已建立');
-      }
-      navigate('/seasons');
-    } catch (err: any) {
-      toast.error(err.message);
+    if (isEdit) {
+      await formSubmit(() => update.mutateAsync({ id: Number(id), ...data }), { success: '賽季已更新', redirect: '/seasons' });
+    } else {
+      await formSubmit(() => create.mutateAsync(data), { success: '賽季已建立', redirect: '/seasons' });
     }
   };
 

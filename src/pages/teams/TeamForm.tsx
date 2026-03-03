@@ -2,15 +2,16 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTeam, useUpdateTeam } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
-import { toast } from 'sonner';
 
 export default function TeamForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const { data: team, isLoading } = useTeam(Number(id));
   const update = useUpdateTeam();
 
@@ -24,13 +25,7 @@ export default function TeamForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await update.mutateAsync({ id: Number(id), ...form });
-      toast.success('隊伍已更新');
-      navigate('/teams');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await formSubmit(() => update.mutateAsync({ id: Number(id), ...form }), { success: '隊伍已更新', redirect: '/teams' });
   };
 
   return (

@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useGame, useBoxscore, useSaveBoxscore, usePlayers, useUpdateGame } from '../../hooks/useApi';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { TeamBadge } from '../../components/TeamBadge';
 import { Spinner } from '../../components/ui/Spinner';
-import { toast } from 'sonner';
 import type { PlayerGameStat } from '../../types';
 
 interface StatCol {
@@ -49,14 +49,23 @@ function calcPts(r: StatRow): number {
 }
 
 function emptyRow(psId: number, name: string): StatRow {
-  const row: any = { playerSeasonId: psId, name };
-  for (const c of STAT_COLS) row[c.key] = 0;
+  const row: StatRow = {
+    playerSeasonId: psId,
+    name,
+    fg2Made: 0, fg2Miss: 0,
+    fg3Made: 0, fg3Miss: 0,
+    ftMade: 0, ftMiss: 0,
+    pts: 0, oreb: 0, dreb: 0,
+    ast: 0, blk: 0, stl: 0,
+    tov: 0, pf: 0,
+  };
   return row;
 }
 
 export default function ScoreEntry() {
   const { gameId } = useParams();
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const gid = Number(gameId);
   const { data: game, isLoading: gLoading } = useGame(gid);
   const { data: existingStats, isLoading: bLoading } = useBoxscore(gid);
@@ -109,22 +118,19 @@ export default function ScoreEntry() {
   const calcTotal = (rows: StatRow[], key: string) =>
     rows.reduce((sum, r) => sum + (Number(r[key]) || 0), 0);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     const stats: Partial<PlayerGameStat>[] = [
       ...homeRows.map((r) => ({ ...r, isHome: true, played: true, treb: (r.oreb ?? 0) + (r.dreb ?? 0) })),
       ...awayRows.map((r) => ({ ...r, isHome: false, played: true, treb: (r.oreb ?? 0) + (r.dreb ?? 0) })),
     ];
-    try {
+    await formSubmit(async () => {
       await saveBoxscore.mutateAsync({ gameId: gid, stats });
       // Update game score and status
       const homeScore = calcTotal(homeRows, 'pts');
       const awayScore = calcTotal(awayRows, 'pts');
       await updateGame.mutateAsync({ id: gid, homeScore, awayScore, status: 'FINISHED' });
-      toast.success('數據已儲存');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+    }, { success: '數據已儲存' });
+  }, [homeRows, awayRows, gid, formSubmit, saveBoxscore, updateGame]);
 
   if (gLoading || bLoading) return <Spinner />;
   if (!game) return <p className="text-gray-500">找不到此比賽</p>;

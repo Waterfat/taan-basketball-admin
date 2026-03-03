@@ -1,14 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { useCreateWeek, useSeasons } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
-import { toast } from 'sonner';
 import type { Phase, WeekType } from '../../types';
 
 export default function WeekForm() {
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const { data: seasons } = useSeasons();
   const current = seasons?.find((s) => s.isCurrent);
   const create = useCreateWeek();
@@ -20,8 +21,8 @@ export default function WeekForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!current) return;
-    try {
-      await create.mutateAsync({
+    await formSubmit(
+      () => create.mutateAsync({
         seasonId: current.id,
         weekNum: Number(form.weekNum),
         date: form.date,
@@ -29,12 +30,9 @@ export default function WeekForm() {
         venue: form.venue,
         type: form.type,
         reason: form.reason || undefined,
-      });
-      toast.success('週次已建立');
-      navigate('/schedule');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+      }),
+      { success: '週次已建立', redirect: '/schedule' },
+    );
   };
 
   return (

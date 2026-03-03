@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUser, useCreateUser, useUpdateUser } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
-import { toast } from 'sonner';
 import type { Role } from '../../types';
 
 const ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN', 'TEAM_CAPTAIN', 'PLAYER', 'VIEWER'];
@@ -15,6 +15,7 @@ export default function UserForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const { data: user, isLoading } = useUser(Number(id));
   const create = useCreateUser();
   const update = useUpdateUser();
@@ -29,19 +30,12 @@ export default function UserForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (isEdit) {
-        const data: Record<string, unknown> = { displayName: form.displayName, role: form.role };
-        if (form.password) data.password = form.password;
-        await update.mutateAsync({ id: Number(id), ...data });
-        toast.success('使用者已更新');
-      } else {
-        await create.mutateAsync(form);
-        toast.success('使用者已建立');
-      }
-      navigate('/users');
-    } catch (err: any) {
-      toast.error(err.message);
+    if (isEdit) {
+      const data: Record<string, unknown> = { displayName: form.displayName, role: form.role };
+      if (form.password) data.password = form.password;
+      await formSubmit(() => update.mutateAsync({ id: Number(id), ...data }), { success: '使用者已更新', redirect: '/users' });
+    } else {
+      await formSubmit(() => create.mutateAsync(form), { success: '使用者已建立', redirect: '/users' });
     }
   };
 

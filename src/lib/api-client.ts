@@ -27,7 +27,7 @@ async function refreshAccessToken(): Promise<string | null> {
       useAuthStore.getState().setAuth(user, tokens.accessToken, tokens.refreshToken);
     } else {
       // Still store tokens even if /me fails
-      useAuthStore.getState().setAuth(null as any, tokens.accessToken, tokens.refreshToken);
+      useAuthStore.getState().setAuth(null, tokens.accessToken, tokens.refreshToken);
     }
     return tokens.accessToken;
   } catch {

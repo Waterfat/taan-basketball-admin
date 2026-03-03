@@ -1,17 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSeasons, useWeeks, useGames, usePlayers, useDuties, useSaveDuties } from '../../hooks/useApi';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
-import { TeamBadge } from '../../components/TeamBadge';
 import { formatDate, filterGameWeeks } from '../../lib/utils';
 import { DUTY_LABEL, type DutyType } from '../../types';
-import { toast } from 'sonner';
 
 const DUTY_TYPES: DutyType[] = ['REFEREE', 'COURT', 'PHOTO', 'EQUIPMENT', 'DATA'];
 
 export default function DutyAssign() {
+  const formSubmit = useFormSubmit();
   const { data: seasons } = useSeasons();
   const current = seasons?.find((s) => s.isCurrent);
   const { data: weeks } = useWeeks(current?.id);
@@ -37,19 +37,14 @@ export default function DutyAssign() {
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!gameId) return;
     const dutiesList = [...assignments.entries()].map(([dutyType, playerSeasonId]) => ({
       dutyType,
       playerSeasonId,
     }));
-    try {
-      await save.mutateAsync({ gameId, duties: dutiesList });
-      toast.success('輪值已儲存');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+    await formSubmit(() => save.mutateAsync({ gameId, duties: dutiesList }), { success: '輪值已儲存' });
+  }, [gameId, assignments, formSubmit, save]);
 
   return (
     <div className="space-y-4">

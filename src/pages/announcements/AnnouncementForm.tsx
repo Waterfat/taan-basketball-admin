@@ -2,16 +2,17 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAnnouncement, useCreateAnnouncement, useUpdateAnnouncement } from '../../hooks/useApi';
 import { useFormState } from '../../hooks/useFormState';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
-import { toast } from 'sonner';
 
 export default function AnnouncementForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const formSubmit = useFormSubmit();
   const { data: item, isLoading } = useAnnouncement(Number(id));
   const create = useCreateAnnouncement();
   const update = useUpdateAnnouncement();
@@ -26,17 +27,10 @@ export default function AnnouncementForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (isEdit) {
-        await update.mutateAsync({ id: Number(id), ...form });
-        toast.success('公告已更新');
-      } else {
-        await create.mutateAsync(form);
-        toast.success('公告已建立');
-      }
-      navigate('/announcements');
-    } catch (err: any) {
-      toast.error(err.message);
+    if (isEdit) {
+      await formSubmit(() => update.mutateAsync({ id: Number(id), ...form }), { success: '公告已更新', redirect: '/announcements' });
+    } else {
+      await formSubmit(() => create.mutateAsync(form), { success: '公告已建立', redirect: '/announcements' });
     }
   };
 

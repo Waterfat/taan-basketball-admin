@@ -1,4 +1,6 @@
+import { useCallback, useMemo } from 'react';
 import { useSeasons, useDragonScores, useRecalculateDragon, useUpdateDragonScore } from '../../hooks/useApi';
+import { useFormSubmit } from '../../hooks/useFormSubmit';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
@@ -7,33 +9,32 @@ import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
 
 export default function DragonManage() {
+  const formSubmit = useFormSubmit();
   const { data: seasons } = useSeasons();
   const current = seasons?.find((s) => s.isCurrent);
   const { data: scores, isLoading } = useDragonScores(current?.id ?? 0);
   const recalc = useRecalculateDragon();
   const updateScore = useUpdateDragonScore();
 
-  const handleRecalc = async () => {
+  const handleRecalc = useCallback(async () => {
     if (!current) return;
-    try {
-      await recalc.mutateAsync(current.id);
-      toast.success('龍虎榜已重新計算');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+    await formSubmit(() => recalc.mutateAsync(current.id), { success: '龍虎榜已重新計算' });
+  }, [current, formSubmit, recalc]);
 
   const handleEdit = async (id: number, field: string, value: number) => {
     try {
       await updateScore.mutateAsync({ id, [field]: value });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : '操作失敗');
     }
   };
 
-  if (isLoading) return <Spinner />;
+  const sorted = useMemo(
+    () => [...(scores ?? [])].sort((a, b) => b.totalPoints - a.totalPoints),
+    [scores],
+  );
 
-  const sorted = [...(scores ?? [])].sort((a, b) => b.totalPoints - a.totalPoints);
+  if (isLoading) return <Spinner />;
 
   return (
     <div className="space-y-4">
